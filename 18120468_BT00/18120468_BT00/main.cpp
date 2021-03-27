@@ -1,12 +1,22 @@
-#include "opencv2/opencv.hpp"
-#include "opencv2/highgui/highgui.hpp"
-using namespace cv;
+#include "function.h"
 
-int main()
+
+int main(int argc, char** argv)
 {
-	Mat image = imread("girl.jpg", CV_LOAD_IMAGE_COLOR);
-	namedWindow("Show Image");
-	imshow("Show Image", image);
+	if (argc != 2)
+	{
+		cout << "Chuong trinh mo va hien thi anh" << endl;
+		return -1;
+	}
+	Mat image; // (1)
+	image = imread(argv[1], IMREAD_COLOR); // (2)
+	if (!image.data)
+	{
+		cout << "Khong the mo anh" << std::endl;
+		return -1;
+	}
+	namedWindow("Display window", WINDOW_AUTOSIZE); // (3)
+	imshow("Display window", image); // (4)
 	waitKey(0);
 	return 0;
 }

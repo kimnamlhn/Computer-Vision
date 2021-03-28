@@ -1,22 +1,62 @@
-#include "function.h"
+﻿#include "function.h"
 
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
-	if (argc != 2)
+	char* command, * inputPath;
+
+	try
 	{
-		cout << "Chuong trinh mo va hien thi anh" << endl;
-		return -1;
+		inputPath = argv[1];
+		command = argv[2];
+
+		// đọc ảnh
+		Mat input = imread(inputPath, -1);
+		Mat output;
+		int isSuccess = 0; // 0 la dung, 1 la sai 
+
+		// Command kiểm tra câu lệnh yêu cầu
+		if (strcmp(command, "--rgb2gray") == 0)
+		{
+			isSuccess = RGB2Gray(input, output);
+		}
+		else if (strcmp(command, "--gray2rgb") == 0)
+		{
+			isSuccess = Gray2RGB(input, output);
+		}
+		else if (strcmp(command, "--bright") == 0)
+		{
+			uchar brighVaule = atoi(argv[3]);
+			isSuccess = changeBrighness(input, output, brighVaule);
+		}
+		else if (strcmp(command, "--contrast") == 0)
+		{
+			uchar contrastValue = atoi(argv[3]);
+			isSuccess = changeContract(input, output, contrastValue);
+		}
+
+
+		//in kết quả ra
+		if (strcmp(command, "--rgb2gray") == 0 || strcmp(command, "--gray2rgb") == 0 || strcmp(command, "--bright") == 0 || strcmp(command, "--contrast") == 0)
+		{
+			if (isSuccess == 0)
+			{
+				imshow("Source Image", input);
+				imshow("Destination Image", output);
+				waitKey(0);
+			}
+			else
+			{
+				throw "Error";
+			}
+		}
 	}
-	Mat image; // (1)
-	image = imread(argv[1], IMREAD_COLOR); // (2)
-	if (!image.data)
+	catch (const char* msg)
 	{
-		cout << "Khong the mo anh" << std::endl;
-		return -1;
+		cout << msg << endl;
+		system("pause");
 	}
-	namedWindow("Display window", WINDOW_AUTOSIZE); // (3)
-	imshow("Display window", image); // (4)
-	waitKey(0);
+
+		system("pause");
 	return 0;
 }

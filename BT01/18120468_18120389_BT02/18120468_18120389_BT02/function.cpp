@@ -1,8 +1,100 @@
-#include "function.h"
+﻿#include "function.h"
 
 
-Mat DoConvolution(Mat& image, float kernel[], int size)
+// image: ảnh vào
+// kernel: là ma trận karrnel tính chập 
+// size: là kích thước bộ lọc
+//Mat DoConvolution(Mat& image, float kernel[], int size)
+//{
+//	// Lam cho anh trang den
+//	int half_size = size / 2; //Lay nua kich thuoc cua size
+//
+//	// Lay dong va cot
+//	int row = image.rows;
+//	int col = image.cols;
+//
+//	// Tao anh output
+//	Mat output(row, col, CV_8UC1);
+//
+//	// Lay step cua anh output va anh image
+//	int image_Step = image.step[0];
+//
+//	// Tao ma tran offset
+//	vector<int> offset;
+//	for (int i = -half_size; i <= half_size; i++)
+//	{
+//		for (int j = -half_size; j <= half_size; j++)
+//		{
+//			offset.push_back(image_Step * i + j);
+//		}
+//	}
+//
+//
+//
+//	// Lay dia chi dong cua anh output va anh image
+//	uchar* pOutput = output.data;
+//	uchar* pImage = image.data;
+//
+//	// Moi vong lap tang dia chi dong len output_Step va image_Step
+//	for (int i = 0; i < row; i++)
+//	{
+//		for (int j = 0; j < col; j++, pImage++, pOutput++)
+//		{
+//			if (i < half_size || i >= row - half_size || j < half_size || j >= col - half_size)
+//			{
+//				pOutput[0] = 0;
+//				continue;
+//			}
+//			// Khoi tao bien tinh tong 
+//			float sum = 0;
+//
+//			// Tinh dao ham
+//			for (int x = -half_size; x <= half_size; x++)
+//			{
+//				for (int y = -half_size; y <= half_size; y++)
+//				{
+//					int index = (x + half_size) * size + (y + half_size); // Vi tri trong mang kernel
+//					sum += pImage[offset[index]] * kernel[index];
+//				}
+//			}
+//
+//			// Neu tong am thi ta gan bang 0
+//			if (sum < 0)
+//			{
+//				sum = 0;
+//			}
+//			pOutput[0] = (int)sum;
+//		}
+//
+//	}
+//	return output;
+//}
+
+
+Mat DoConvolution(Mat& image, float kernel[], int size) 
 {
+	////kiểm tra ảnh nguồn
+	//if (image.data == NULL)
+	//	return image;
+	////hàng, cột
+	//int width = image.cols, height = image.rows;
+	////số kênh màu 
+	//int nChannels = image.channels();
+	////tạo ảnh đích và bản sao source
+	//Mat desImage(height, width, CV_8UC1);
+	//Mat srcImage(height, width, CV_8UC1);
+
+	////tạo ma trận offset
+	//vector <int> dx;
+	//vector <int> dy;
+	//for (int i = 0; i < size; i++)
+	//	for (int j = 0; j < size; j++) {
+	//		dx.push_back(i - (size / 2));
+	//		dy.push_back(j - (size / 2));
+	//	}
+
+
+
 	// Lam cho anh trang den
 	int half_size = size / 2; //Lay nua kich thuoc cua size
 
@@ -66,6 +158,7 @@ Mat DoConvolution(Mat& image, float kernel[], int size)
 	}
 	return output;
 }
+
 
 int detectBySobel(Mat src, Mat dst)
 {

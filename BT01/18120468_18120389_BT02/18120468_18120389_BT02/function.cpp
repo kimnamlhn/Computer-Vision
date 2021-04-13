@@ -1,195 +1,225 @@
 ﻿#include "function.h"
 
-Mat DoConvolution(Mat& image, float kernel[], int size)
+
+Mat DoConvolution(Mat& srcImage, float kernel[], int size)
 {
-	// Lam cho anh trang den
-	int half_size = size / 2; //Lay nua kich thuoc cua size
+	// kiểm tra điều kiện ảnh đầu vào
+	if (srcImage.data == NULL)
+		exit;
 
-	// Lay dong va cot
-	int row = image.rows;
-	int col = image.cols;
+	// Dòng và cột 
+	int rows = srcImage.rows;
+	int cols = srcImage.cols;
 
-	// Tao anh output
-	Mat output(row, col, CV_8UC1);
+	// số kênh màu
+	int nChannels = srcImage.channels();
+	
+	// Tạo ảnh đích là ảnh xám
+	Mat desImage(rows, cols, CV_8UC1);
 
-	// Lay step cua anh output va anh image
-	int image_Step = image.step[0];
+	// Lấy step ảnh 
+	int image_Step = srcImage.step[0];
 
 	// Tao ma tran offset
 	vector<int> offset;
-	for (int i = -half_size; i <= half_size; i++)
+	for (int i = -size / 2; i <= size / 2; i++)
 	{
-		for (int j = -half_size; j <= half_size; j++)
+		for (int j = -size / 2; j <= size / 2; j++)
 		{
 			offset.push_back(image_Step * i + j);
 		}
 	}
 
-
-
-	// Lay dia chi dong cua anh output va anh image
-	uchar* pOutput = output.data;
-	uchar* pImage = image.data;
-
-	// Moi vong lap tang dia chi dong len output_Step va image_Step
-	for (int i = 0; i < row; i++)
+	//truy xuất từng pixel điểm ảnh
+	for (int y = 0; y < rows; y++)
 	{
-		for (int j = 0; j < col; j++, pImage++, pOutput++)
+		// con trỏ chỉ dữ liệu trên từng hàng của ảnh nguồn và ảnh đích
+		uchar* pSrcRow = srcImage.ptr<uchar>(y);
+		uchar* pDstRow = desImage.ptr<uchar>(y);
+		for (int j = 0; j < cols; j++, pSrcRow += nChannels, pDstRow += nChannels)
 		{
-			if (i < half_size || i >= row - half_size || j < half_size || j >= col - half_size)
-			{
-				pOutput[0] = 0;
-				continue;
-			}
-			// Khoi tao bien tinh tong 
-			float sum = 0;
+			// Biến tính
+			float value = 0;
 
-			// Tinh dao ham
-			for (int x = -half_size; x <= half_size; x++)
+			// Tính đạo hàm
+			for (int x = -size / 2; x <= size / 2; x++)
 			{
-				for (int y = -half_size; y <= half_size; y++)
+				for (int y = -size / 2; y <= size / 2; y++)
 				{
-					int index = (x + half_size) * size + (y + half_size); // Vi tri trong mang kernel
-					sum += pImage[offset[index]] * kernel[index];
+					// gán với vị trị trong mảng kernel
+					int index = (x + size / 2) * size + (y + size / 2); 
+					value += pSrcRow[offset[index]] * kernel[index];
 				}
 			}
 
-			// Neu tong am thi ta gan bang 0
-			if (sum < 0)
+			// Giá trị từ 0-255
+			// nếu nhỏ hơn 0 thì gán bằng 0
+			// nếu lớn hơn 255 thì gán 255
+			if (value < 0)
 			{
-				sum = 0;
+				value = 0;
 			}
-			pOutput[0] = (int)sum;
+			pDstRow[0] = (int)value;
 		}
+		}
+	
 
-	}
-	return output;
+
+
+	return desImage;
 }
 
-int detectBySobel(Mat src, Mat dst)
+int detectBySobel(Mat srcImage, Mat desImage)
 {
-	// Ma tran theo phuong x va phuong y
-	float kernel_x[] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
-	float kernel_y[] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
+	// kiểm tra điều kiện ảnh đầu vào
+	if (srcImage.data == NULL)
+		exit;
 
-	// Dao ham theo 2 huong
-	Mat image_x = DoConvolution(src, kernel_x, 3);
-	Mat image_y = DoConvolution(src, kernel_y, 3);
+	// Dòng và cột 
+	int rows = srcImage.rows;
+	int cols = srcImage.cols;
 
-	// Xuat anh dao ham
-	imshow("Dao ham theo x", image_x);
-	imshow("Dao ham theo y", image_y);
+	// số kênh màu
+	int nChannels = srcImage.channels();
 
-	// Tinh sqrt ( image_x^2 + image_y^2)
-	// Lay dong va cot
-	int row = src.rows;
-	int col = src.cols;
+	// Mặt nạ sobel theo phương x và y
+	float kernelX[] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
+	float kernelY[] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
 
-	// Lay dia chi anh dst, image_x, image_y
-	uchar* pDst = dst.data;
-	uchar* pImage_x = image_x.data;
-	uchar* pImage_y = image_y.data;
+	// đạo hàm theo 2 hướng
+	Mat imageX = DoConvolution(srcImage, kernelX, 3);
+	Mat imageY = DoConvolution(srcImage, kernelY, 3);
 
-	// Gan vao anh dst
-	for (int i = 0; i < row; i++)
+	// Địa chỉ ảnh imageX, imageY đã tính chập
+	uchar* pDesImage = desImage.data;
+	uchar* pImageX = imageX.data;
+	uchar* pImageY = imageY.data;
+
+	// Gán vào ảnh đích
+	for (int i = 0; i < rows; i++)
 	{
-		for (int j = 0; j < col; j++, pDst++, pImage_x++, pImage_y++)
+		for (int j = 0; j < cols; j++, pDesImage++, pImageX++, pImageY++)
 		{
-			pDst[0] = (uchar)(sqrt(pImage_x[0] * pImage_x[0] + pImage_y[0] * pImage_y[0]) / 4);
+			pDesImage[0] = (uchar)(sqrt(pImageX[0] * pImageX[0] + pImageY[0] * pImageY[0]) / 4);
 		}
 	}
-	imshow("Destination", dst);
+
+	imshow("Source Image", srcImage);
+	imshow("Destination", desImage);
 	waitKey(0);
 	return 1;
 }
-int detectByPrewitt(Mat src, Mat dst)
+int detectByPrewitt(Mat srcImage, Mat desImage)
 {
-	// Ma tran theo phuong x va phuong y
-	float kernel_x[] = { 1, 0, -1, 1, 0, -1, 1, 0, -1 };
-	float kernel_y[] = { -1,-1,-1,0,0,0,1,1,1 };
+	// kiểm tra điều kiện ảnh đầu vào
+	if (srcImage.data == NULL)
+		exit;
+
+	// Dòng và cột 
+	int rows = srcImage.rows;
+	int cols = srcImage.cols;
+
+	// số kênh màu
+	int nChannels = srcImage.channels();
+
+	// Mặt nạ prewitt theo phương x và y
+	float kernelX[] = { 1, 0, -1, 1, 0, -1, 1, 0, -1 };
+	float kernelY[] = { -1, -1, -1, 0, 0, 0, 1, 1, 1 };
 
 
-	// Dao ham theo 2 huong
-	Mat image_x = DoConvolution(src, kernel_x, 3);
-	Mat image_y = DoConvolution(src, kernel_y, 3);
+	// đạo hàm theo 2 hướng
+	Mat imageX = DoConvolution(srcImage, kernelX, 3);
+	Mat imageY = DoConvolution(srcImage, kernelY, 3);
 
-	// Xuat anh dao ham
-	imshow("Dao ham theo x", image_x);
-	imshow("Dao ham theo y", image_y);
 
-	// Tinh sqrt ( image_x^2 + image_y^2)
-	// Lay dong va cot
-	int row = src.rows;
-	int col = src.cols;
+	// Địa chỉ ảnh imageX, imageY đã tính chập
+	uchar* pDst = desImage.data;
+	uchar* pImageX = imageX.data;
+	uchar* pImageY = imageY.data;
 
-	// Lay dia chi anh dst, image_x, image_y
-	uchar* pDst = dst.data;
-	uchar* pImage_x = image_x.data;
-	uchar* pImage_y = image_y.data;
-
-	// Gan vao anh dst
-	for (int i = 0; i < row; i++)
+	// Gán vào ảnh đích
+	for (int i = 0; i < rows; i++)
 	{
-		for (int j = 0; j < col; j++, pDst++, pImage_x++, pImage_y++)
+		for (int j = 0; j < cols; j++, pDst++, pImageX++, pImageY++)
 		{
-			pDst[0] = (uchar)(sqrt(pImage_x[0] * pImage_x[0] + pImage_y[0] * pImage_y[0]) / 3);
+			pDst[0] = (uchar)(sqrt(pImageX[0] * pImageX[0] + pImageY[0] * pImageY[0]) / 3);
 		}
 	}
-	imshow("Destination", dst);
+
+	imshow("Source Image", srcImage);
+	imshow("Destination", desImage);
 	waitKey(0);
 	return 1;
 }
-int detectByLaplace(Mat sourceImage, Mat destinationImage)
+
+int detectByLaplace(Mat srcImage, Mat desImage)
 {
-	int rows = sourceImage.rows;
-	int cols = sourceImage.cols;
-	int channels = sourceImage.channels();
+	// kiểm tra điều kiện ảnh đầu vào
+	if (srcImage.data == NULL)
+		exit;
 
-	if (channels != 1) return 1;
-	float eps = 1e-6;
+	// Dòng và cột 
+	int rows = srcImage.rows;
+	int cols = srcImage.cols;
 
-	vector<float> laplace = { 1, 1, 1, 1, -8, 1, 1, 1, 1 };
-	Mat destinationImageCopied = Mat(rows, cols, CV_32FC1);
+	// số kênh màu
+	int nChannels = srcImage.channels();
 
-	// tinh chap
-	//Convolution Laplace;
-	//Laplace.SetKernel(laplace, 3, 3);
-	// kiem tra dieu kien
-	//if (Laplace.DoConvolution(sourceImage, destinationImageCopied) == 1) return 1;
+	// Tạo kernel
+	vector<float> kernel;
+	int size = 3 / 2;
 
-	// tinh threshold
-	float threshold = -1.0 * INT_MAX;
-	destinationImage = Mat::zeros(rows, cols, CV_8UC1);
-	for (int x = 0; x < destinationImageCopied.rows; x++) {
-		for (int y = 0; y < destinationImageCopied.cols; y++) {
-			float value = destinationImageCopied.at<float>(x, y);
-			threshold = value > threshold ? value : threshold;
+	kernel = { -1,-1,-1,-1,8,-1,-1,-1,-1 };
+
+	// step của ảnh
+	int step = srcImage.step[0];
+
+	// offset
+	vector<int> offset;
+	for (int i = -size; i <= size; i++)
+	{
+		for (int j = -size; j <= size; j++)
+		{
+			offset.push_back(i * step + j);
 		}
 	}
-	threshold = threshold > 255 ? 255 : threshold;
-	threshold = threshold * 25 / 100.0;
 
-	//tinh zero crossing
-	int dx[] = { -1, 1, 0, -1 };
-	int dy[] = { -1, -1, 1, 0 };
-	for (int x = 1; x < destinationImageCopied.rows - 1; x++) {
-		for (int y = 1; y < destinationImageCopied.cols - 1; y++) {
-			int count = 0;
-			for (int k = 0; k < 4; k++) {
-				float value1 = destinationImageCopied.at<float>(x + dx[k], y + dy[k]);
-				float value2 = destinationImageCopied.at<float>(x - dx[k], y - dy[k]);
-				int sign1 = value1 < 0 ? -1 : 1;
-				int sign2 = value2 < 0 ? -1 : 1;
-				if (sign1 != sign2 && abs(value1 - value2) - eps > threshold) {
-					count++;
+	uchar* pSrc = srcImage.data;
+	uchar* pDst = desImage.data;
+
+	// truy xuất từng pixel điểm ảnh
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++, pSrc++, pDst++)
+		{
+			// khai báo biến tính
+			float value = 0;
+			for (int x = -size; x <= size; x++)
+			{
+				for (int y = -size; y <= size; y++)
+				{
+					int index = (x + size) * 3 + (y + size);
+					value += pSrc[offset[index]] * kernel[index];
 				}
 			}
-			// diem zero crossing
-			if (count >= 2) destinationImage.at<uchar>(x, y) = 255;
+
+			// Giá trị từ 0-255
+			// nếu nhỏ hơn 0 thì gán bằng 0
+			// nếu lớn hơn 255 thì gán 255
+			if (value > 0)
+				pDst[0] = 255;
+			else
+				pDst[0] = 0;
+			
 		}
 	}
-
-	imshow("Laplace", destinationImage);
+	imshow("Source Image", srcImage);
+	imshow("Destination Image", desImage);
 	waitKey(0);
 	return 1;
+}
+
+int detectByCany(Mat sourceImage, Mat destinationImage)
+{
+	return 0;
 }

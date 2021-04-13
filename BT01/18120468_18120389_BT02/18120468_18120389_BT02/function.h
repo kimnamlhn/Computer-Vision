@@ -5,11 +5,11 @@ using namespace std;
 using namespace cv;
 
 // hàm tính chập
-int DoConvolution(Mat& sourceImage, Mat& destinationImage, vector<float> kernel, int size);
+Mat DoConvolution(Mat& image, float kernel[], int size);
 //phát hiện biên cạnh bằng sobel
-int detectBySobel(Mat& sourceImage, Mat& destinationImage, int size);
+int detectBySobel(Mat src, Mat dst);
 //phát hiện biên cạnh bằng prewitt
-int detectByPrewitt(Mat sourceImage, Mat destinationImage, int size);
+int detectByPrewitt(Mat src, Mat dst);
 //phát hiện biên cạnh bằng laplace
 int detectByLaplace(Mat sourceImage, Mat destinationImage);
 //phát hiện biên cạnh bằng cany

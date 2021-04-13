@@ -1,128 +1,195 @@
 ﻿#include "function.h"
 
-int DoConvolution(Mat& sourceImage, Mat& destinationImage, vector<float> kernel, int size)
+Mat DoConvolution(Mat& image, float kernel[], int size)
 {
-	int rows = sourceImage.rows;
-	int cols = sourceImage.cols;
+	// Lam cho anh trang den
+	int half_size = size / 2; //Lay nua kich thuoc cua size
 
-	Mat sourceClone = sourceImage.clone(); // tao ban sao
-	vector <int> dx;
-	vector <int> dy;
-	for (int i = 0; i < size; i++)
-		for (int j = 0; j < size; j++) {
-			dx.push_back(i - (size / 2));
-			dy.push_back(j - (size / 2));
-		}
+	// Lay dong va cot
+	int row = image.rows;
+	int col = image.cols;
 
-	destinationImage = Mat(rows - size + 1, cols - size + 1, CV_32FC1, Scalar(0.0));
+	// Tao anh output
+	Mat output(row, col, CV_8UC1);
 
+	// Lay step cua anh output va anh image
+	int image_Step = image.step[0];
 
-	for (int i = 0; i < destinationImage.rows; i++) {
-		float* dataRow = destinationImage.ptr<float>(i);
-		for (int j = 0; j < destinationImage.cols; j++) {
-			int i_source = i + (size / 2), j_source = j + (size / 2);
-			float convolution = 0.0;
-			for (int k = 0; k < size * size; k++) {
-				float dataImage = 1.0 * sourceClone.ptr<uchar>(i_source - dx[k])[j_source - dy[k]];
-				float dataKernel = 1.0 * kernel[(dx[k] + (size / 2)) * size + dy[k] + (size / 2)];
-				convolution += dataImage * dataKernel;
-			}
-			dataRow[j] = convolution;
+	// Tao ma tran offset
+	vector<int> offset;
+	for (int i = -half_size; i <= half_size; i++)
+	{
+		for (int j = -half_size; j <= half_size; j++)
+		{
+			offset.push_back(image_Step * i + j);
 		}
 	}
 
-	return 0;
-}
-
-int detectBySobel(Mat& sourceImage, Mat& destinationImage, int size)
-{
-	int rows = sourceImage.rows;
-	int cols = sourceImage.cols;
-	int channels = sourceImage.channels();
-
-	//if (channels != 1) 
-	//	return 1;
-	float eps = 1e-6;
-
-	float threshold = 25;
-
-	Mat sourceClone = sourceImage.clone(); // tao ban sao
-	destinationImage = Mat(rows - size + 1, cols - size + 1, CV_32FC1, Scalar(0));
-
-	vector <float> Wx = { -1 , 0, 1, -2, 0, 2, -1, 0, 1 };
-	vector <float> Wy = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
-
-	//for (int i = 0; i < Wx.size(); i++) {
-	//	Wx[i] *= 1.0 / 4;
-	//	Wy[i] *= 1.0 / 4;
-	//}
-	Mat Gx;
-	Mat Gy;
-
-	DoConvolution(sourceClone, Gx, Wx, 3);
-	DoConvolution(sourceClone, Gy, Wy, 3);
 
 
-	for (int i = 0; i < destinationImage.rows; i++)
-		for (int j = 0; j < destinationImage.cols; j++) {
-			float fx = Gx.ptr<float>(i)[j];
-			float fy = Gy.ptr<float>(i)[j];
-			float e = sqrt(fx * fx + fy * fy);
-			if (e - threshold >= eps) {
-				destinationImage.ptr<float>(i)[j] = 1;
+	// Lay dia chi dong cua anh output va anh image
+	uchar* pOutput = output.data;
+	uchar* pImage = image.data;
+
+	// Moi vong lap tang dia chi dong len output_Step va image_Step
+	for (int i = 0; i < row; i++)
+	{
+		for (int j = 0; j < col; j++, pImage++, pOutput++)
+		{
+			if (i < half_size || i >= row - half_size || j < half_size || j >= col - half_size)
+			{
+				pOutput[0] = 0;
+				continue;
 			}
+			// Khoi tao bien tinh tong 
+			float sum = 0;
+
+			// Tinh dao ham
+			for (int x = -half_size; x <= half_size; x++)
+			{
+				for (int y = -half_size; y <= half_size; y++)
+				{
+					int index = (x + half_size) * size + (y + half_size); // Vi tri trong mang kernel
+					sum += pImage[offset[index]] * kernel[index];
+				}
+			}
+
+			// Neu tong am thi ta gan bang 0
+			if (sum < 0)
+			{
+				sum = 0;
+			}
+			pOutput[0] = (int)sum;
 		}
-	return 0;
+
+	}
+	return output;
 }
 
-int detectByPrewitt(Mat sourceImage, Mat destinationImage, int size)
+int detectBySobel(Mat src, Mat dst)
 {
-	int rows = sourceImage.rows;
-	int cols = sourceImage.cols;
-	int channels = sourceImage.channels();
+	// Ma tran theo phuong x va phuong y
+	float kernel_x[] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
+	float kernel_y[] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
 
-	//if (channels != 1)
-	//	return 1;
-	float eps = 1e-6;
+	// Dao ham theo 2 huong
+	Mat image_x = DoConvolution(src, kernel_x, 3);
+	Mat image_y = DoConvolution(src, kernel_y, 3);
 
-	float threshold = 50;
-	vector <float> Wx = { 1.0, 0, -1.0, 1.0, 0, -1.0, 1.0, 0, -1.0 };
-	vector <float> Wy = { -1.0, -1.0, -1.0, 0, 0, 0, 1.0, 1.0, 1.0 };
+	// Xuat anh dao ham
+	imshow("Dao ham theo x", image_x);
+	imshow("Dao ham theo y", image_y);
 
-	Mat fx;
-	Mat fy;
+	// Tinh sqrt ( image_x^2 + image_y^2)
+	// Lay dong va cot
+	int row = src.rows;
+	int col = src.cols;
 
+	// Lay dia chi anh dst, image_x, image_y
+	uchar* pDst = dst.data;
+	uchar* pImage_x = image_x.data;
+	uchar* pImage_y = image_y.data;
 
-	for (int i = 0; i < Wx.size(); i++) {
-		Wx[i] *= 1.0 / 3;
-		Wy[i] *= 1.0 / 3;
-	}
-	
-	DoConvolution(sourceImage, fx, Wx, 3);
-	DoConvolution(sourceImage, fy, Wy, 3);
-
-
-	destinationImage = Mat(rows - size + 1, cols - size + 1, CV_32FC1, Scalar(0));
-	for (int i = 0; i < destinationImage.rows; i++) {
-		float* DestRow = destinationImage.ptr<float>(i);
-		float* fxRow = fx.ptr<float>(i);
-		float* fyRow = fy.ptr<float>(i);
-		for (int j = 0; j < destinationImage.cols; j++) {
-			float e = sqrt(fxRow[j] * fxRow[j] + fyRow[j] * fyRow[j]);
-			if (e - threshold >= eps) {
-				DestRow[j] = 1;
-			}
+	// Gan vao anh dst
+	for (int i = 0; i < row; i++)
+	{
+		for (int j = 0; j < col; j++, pDst++, pImage_x++, pImage_y++)
+		{
+			pDst[0] = (uchar)(sqrt(pImage_x[0] * pImage_x[0] + pImage_y[0] * pImage_y[0]) / 4);
 		}
 	}
-	fx.release();
-	fy.release();
-
-	return 0;
+	imshow("Destination", dst);
+	waitKey(0);
+	return 1;
 }
+int detectByPrewitt(Mat src, Mat dst)
+{
+	// Ma tran theo phuong x va phuong y
+	float kernel_x[] = { 1, 0, -1, 1, 0, -1, 1, 0, -1 };
+	float kernel_y[] = { -1,-1,-1,0,0,0,1,1,1 };
 
 
+	// Dao ham theo 2 huong
+	Mat image_x = DoConvolution(src, kernel_x, 3);
+	Mat image_y = DoConvolution(src, kernel_y, 3);
+
+	// Xuat anh dao ham
+	imshow("Dao ham theo x", image_x);
+	imshow("Dao ham theo y", image_y);
+
+	// Tinh sqrt ( image_x^2 + image_y^2)
+	// Lay dong va cot
+	int row = src.rows;
+	int col = src.cols;
+
+	// Lay dia chi anh dst, image_x, image_y
+	uchar* pDst = dst.data;
+	uchar* pImage_x = image_x.data;
+	uchar* pImage_y = image_y.data;
+
+	// Gan vao anh dst
+	for (int i = 0; i < row; i++)
+	{
+		for (int j = 0; j < col; j++, pDst++, pImage_x++, pImage_y++)
+		{
+			pDst[0] = (uchar)(sqrt(pImage_x[0] * pImage_x[0] + pImage_y[0] * pImage_y[0]) / 3);
+		}
+	}
+	imshow("Destination", dst);
+	waitKey(0);
+	return 1;
+}
 int detectByLaplace(Mat sourceImage, Mat destinationImage)
 {
-	return 0;
-}
+	int rows = sourceImage.rows;
+	int cols = sourceImage.cols;
+	int channels = sourceImage.channels();
 
+	if (channels != 1) return 1;
+	float eps = 1e-6;
+
+	vector<float> laplace = { 1, 1, 1, 1, -8, 1, 1, 1, 1 };
+	Mat destinationImageCopied = Mat(rows, cols, CV_32FC1);
+
+	// tinh chap
+	//Convolution Laplace;
+	//Laplace.SetKernel(laplace, 3, 3);
+	// kiem tra dieu kien
+	//if (Laplace.DoConvolution(sourceImage, destinationImageCopied) == 1) return 1;
+
+	// tinh threshold
+	float threshold = -1.0 * INT_MAX;
+	destinationImage = Mat::zeros(rows, cols, CV_8UC1);
+	for (int x = 0; x < destinationImageCopied.rows; x++) {
+		for (int y = 0; y < destinationImageCopied.cols; y++) {
+			float value = destinationImageCopied.at<float>(x, y);
+			threshold = value > threshold ? value : threshold;
+		}
+	}
+	threshold = threshold > 255 ? 255 : threshold;
+	threshold = threshold * 25 / 100.0;
+
+	//tinh zero crossing
+	int dx[] = { -1, 1, 0, -1 };
+	int dy[] = { -1, -1, 1, 0 };
+	for (int x = 1; x < destinationImageCopied.rows - 1; x++) {
+		for (int y = 1; y < destinationImageCopied.cols - 1; y++) {
+			int count = 0;
+			for (int k = 0; k < 4; k++) {
+				float value1 = destinationImageCopied.at<float>(x + dx[k], y + dy[k]);
+				float value2 = destinationImageCopied.at<float>(x - dx[k], y - dy[k]);
+				int sign1 = value1 < 0 ? -1 : 1;
+				int sign2 = value2 < 0 ? -1 : 1;
+				if (sign1 != sign2 && abs(value1 - value2) - eps > threshold) {
+					count++;
+				}
+			}
+			// diem zero crossing
+			if (count >= 2) destinationImage.at<uchar>(x, y) = 255;
+		}
+	}
+
+	imshow("Laplace", destinationImage);
+	waitKey(0);
+	return 1;
+}

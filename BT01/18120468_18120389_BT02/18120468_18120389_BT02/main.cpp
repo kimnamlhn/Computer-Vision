@@ -1,18 +1,21 @@
 ﻿#include "function.h"
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
-	Mat image, desImage;
-	int flags;
-	image = imread("girl_gray.png", IMREAD_COLOR);
+	Mat image;
+	image = imread("girl_gray.png", CV_8UC1);
+	if (!image.data)
+	{
+		cout << "Khong the mo anh" << std::endl;
+		return -1;
+	}
+	Mat dst(image.rows, image.cols, CV_8UC1);
+	detectByLaplace(image, dst);
 
-	flags = detectBySobel(image, desImage, 3);
-	imshow("src", image);
-	imshow("des", desImage);
 
-	waitKey(0);
+
+	return 0;
 }
-
 
 //int main(int argc, char* argv[])
 //{

@@ -1,34 +1,10 @@
 ﻿#include "function.h"
 
-//int main(int argc, char** argv)
-//{
-//	Mat image;
-//	image = imread("girl_gray.png", CV_8UC1);
-//	if (!image.data)
-//	{
-//		cout << "Khong the mo anh" << std::endl;
-//		return -1;
-//	}
-//	Mat dst(image.rows, image.cols, CV_8UC1);
-//	detectBySobel(image, dst);
-//
-//	return 0;
-//}
-
 int main(int argc, char* argv[])
 {
-#pragma region ONLY_FOR_DEBUG
-	argc = 3;
-	char* temp[4];
-	temp[0] = _strdup("18120468_18120389_BT02.exe");
-	temp[1] = _strdup("girl_gray.png");
-	temp[2] = _strdup("--laplace");
-
-	argv = temp;
-#pragma endregion
 
 	char* command, * inputPath;
-
+	int isSuccess;
 	try
 	{
 		inputPath = argv[1];
@@ -40,20 +16,35 @@ int main(int argc, char* argv[])
 
 		if (strcmp(command, "--sobel") == 0)
 		{
-			detectBySobel(srcImage, desImage);
+			isSuccess = detectBySobel(srcImage, desImage);
 		}
 		else if (strcmp(command, "--prewitt") == 0)
 		{
-			detectByPrewitt(srcImage, desImage);
+			isSuccess = detectByPrewitt(srcImage, desImage);
 		}
 		else if (strcmp(command, "--laplace") == 0)
 		{
-			detectByLaplace(srcImage, desImage);
+			isSuccess = detectByLaplace(srcImage, desImage);
 		}
 		else if (strcmp(command, "--cany") == 0)
 		{
-			detectByCany(srcImage, desImage);
+			isSuccess = detectByCany(srcImage, desImage);
 
+		}
+
+		//in kết quả ra
+		if (strcmp(command, "--sobel") == 0 || strcmp(command, "--prewitt") == 0 || strcmp(command, "--laplace") == 0 || strcmp(command, "--cany") == 0)
+		{
+			if (isSuccess == 0)
+			{
+				imshow("Source Image", srcImage);
+				imshow("Destination Image", desImage);
+				waitKey(0);
+			}
+			else
+			{
+				throw "Error";
+			}
 		}
 	}
 	catch (const char* msg)
@@ -62,12 +53,6 @@ int main(int argc, char* argv[])
 		system("pause");
 	}
 
-#pragma region ONLY_FOR_DEBUG
-	free(temp[0]);
-	free(temp[1]);
-	free(temp[2]);
-	free(temp[3]);
-#pragma endregion
 
 	system("pause");
 	return 0;

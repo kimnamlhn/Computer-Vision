@@ -1,6 +1,9 @@
 ﻿#include "function.h"
 
 
+//srcImage: ảnh nguồn
+//kernel[]: giá trị của ma trận kernel
+//size: kích thước ma trận kernel
 Mat DoConvolution(Mat& srcImage, float kernel[], int size)
 {
 	// kiểm tra điều kiện ảnh đầu vào
@@ -69,6 +72,7 @@ Mat DoConvolution(Mat& srcImage, float kernel[], int size)
 	return desImage;
 }
 
+//phát hiện biên cạnh bằng sobel
 int detectBySobel(Mat srcImage, Mat desImage)
 {
 	// kiểm tra điều kiện ảnh đầu vào
@@ -104,11 +108,13 @@ int detectBySobel(Mat srcImage, Mat desImage)
 		}
 	}
 
-	imshow("Source Image", srcImage);
-	imshow("Destination", desImage);
+	//imshow("Source Image", srcImage);
+	//imshow("Destination", desImage);
 	waitKey(0);
-	return 1;
+	return 0;
 }
+
+//phát hiện biên cạnh bằng sobel
 int detectByPrewitt(Mat srcImage, Mat desImage)
 {
 	// kiểm tra điều kiện ảnh đầu vào
@@ -146,12 +152,13 @@ int detectByPrewitt(Mat srcImage, Mat desImage)
 		}
 	}
 
-	imshow("Source Image", srcImage);
-	imshow("Destination", desImage);
+	//imshow("Source Image", srcImage);
+	//imshow("Destination", desImage);
 	waitKey(0);
-	return 1;
+	return 0;
 }
 
+//phát hiện biên cạnh bằng prewitt
 int detectByLaplace(Mat srcImage, Mat desImage)
 {
 	// kiểm tra điều kiện ảnh đầu vào
@@ -213,12 +220,13 @@ int detectByLaplace(Mat srcImage, Mat desImage)
 			
 		}
 	}
-	imshow("Source Image", srcImage);
-	imshow("Destination Image", desImage);
+	//imshow("Source Image", srcImage);
+	//imshow("Destination Image", desImage);
 	waitKey(0);
-	return 1;
+	return 0;
 }
 
+//phát hiện biên cạnh bằng cany
 int detectByCany(Mat sourceImage, Mat destinationImage)
 {
 	return 0;
